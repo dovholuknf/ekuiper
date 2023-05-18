@@ -29,9 +29,12 @@ mqtt:
 edgex:
   redisMsgBus: #redis connection key
     protocol: redis
-    server: 127.0.0.1
+    server: ec2-3-134-108-218.us-east-2.compute.amazonaws.com
     port: 6379
     type: redis
+    optional:
+      Username: default
+      Password: 6ECEyxTN2FV2+8t853lRh2wSuGtk64Jee3sUyfNDMqMw
     #  Below is optional configurations settings for mqtt
     #  type: mqtt
     #  optional:

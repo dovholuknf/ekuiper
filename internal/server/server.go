@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -37,6 +38,8 @@ import (
 	"github.com/lf-edge/ekuiper/internal/topo/connection/factory"
 	"github.com/lf-edge/ekuiper/internal/topo/rule"
 	"github.com/lf-edge/ekuiper/pkg/ast"
+
+	"github.com/openziti/sdk-golang/ziti"
 )
 
 var (
@@ -143,12 +146,37 @@ func StartUp(Version, LoadFileType string) {
 
 	// Start rest service
 	srvRest := createRestServer(conf.Config.Basic.RestIp, conf.Config.Basic.RestPort, conf.Config.Basic.Authentication)
+
+	var ln net.Listener
+	someValue := "zerotrust"
+	switch someValue {
+	case "zerotrust":
+
+		var zitiCtx ziti.Context
+		var ctxErr error
+		ozIdFile := "/mnt/v/temp/ekuiper.identity.json"
+
+		zitiCtx, ctxErr = ziti.LoadContext(ozIdFile)
+		if ctxErr != nil {
+			panic(ctxErr)
+		}
+		serviceName := "edgex.ekuiper"
+		ln, err = zitiCtx.Listen(serviceName)
+
+		ziti.DefaultCollection.Add(zitiCtx)
+	default:
+		logger.Warn("using ListenMode 'http'")
+		ln, err = net.Listen("tcp", srvRest.Addr)
+	}
+
 	go func() {
 		var err error
 		if conf.Config.Basic.RestTls == nil {
-			err = srvRest.ListenAndServe()
+			//pre openziti err = srvRest.ListenAndServe()
+			err = srvRest.Serve(ln)
 		} else {
-			err = srvRest.ListenAndServeTLS(conf.Config.Basic.RestTls.Certfile, conf.Config.Basic.RestTls.Keyfile)
+			//pre openziti err = srvRest.ListenAndServeTLS(conf.Config.Basic.RestTls.Certfile, conf.Config.Basic.RestTls.Keyfile)
+			err = srvRest.ServeTLS(ln, conf.Config.Basic.RestTls.Certfile, conf.Config.Basic.RestTls.Keyfile)
 		}
 		if err != nil && err != http.ErrServerClosed {
 			logger.Errorf("Error serving rest service: %s", err)

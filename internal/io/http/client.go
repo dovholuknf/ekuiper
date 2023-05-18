@@ -15,11 +15,14 @@
 package http
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/openziti/sdk-golang/ziti"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -91,6 +94,8 @@ type bodyResp struct {
 }
 
 var bodyTypeMap = map[string]string{"none": "", "text": "text/plain", "json": "application/json", "html": "text/html", "xml": "application/xml", "javascript": "application/javascript", "form": ""}
+
+var zitiTransports = make(map[string]*http.Transport, 10)
 
 func (cc *ClientConf) InitConf(device string, props map[string]interface{}) error {
 	c := &RawConf{
@@ -209,8 +214,41 @@ func (cc *ClientConf) InitConf(device string, props map[string]interface{}) erro
 		}
 	}
 
-	tr := &http.Transport{
-		TLSClientConfig: tlscfg,
+	var tr *http.Transport
+	someValue := "zerotrust"
+	switch someValue {
+	case "zerotrust":
+
+		ozIdFile := "/mnt/v/temp/ekuiper.identity.json"
+
+		if zitiRoundTripper, ok := zitiTransports[ozIdFile]; ok {
+			//reuse the existing context
+			if zitiRoundTripper == nil {
+				panic("how is the transport nil")
+			}
+			tr = zitiRoundTripper
+			//client.addr = "http://" + openZitiServiceName
+		} else {
+			var zitiCtx ziti.Context
+			var ctxErr error
+			zitiCtx, ctxErr = ziti.LoadContext(ozIdFile)
+			if ctxErr != nil {
+				panic(ctxErr)
+			}
+
+			ziti.DefaultCollection.Add(zitiCtx)
+
+			zitiTransport := http.DefaultTransport.(*http.Transport).Clone() // copy default transport
+			zitiTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+				dialer := ziti.NewDialerWithFallback(ctx, nil)
+				return dialer.Dial(network, addr)
+			}
+			zitiTransports[ozIdFile] = zitiTransport
+		}
+	default:
+		tr = &http.Transport{
+			TLSClientConfig: tlscfg,
+		}
 	}
 
 	cc.client = &http.Client{

@@ -2,7 +2,7 @@ basic:
   # true|false, with debug level, it prints more debug info
   debug: false
   # true|false, if it's set to true, then the log will be print to console
-  consoleLog: false
+  consoleLog: true
   # true|false, if it's set to true, then the log will be print to log file
   fileLog: true
   # How many hours to split the file

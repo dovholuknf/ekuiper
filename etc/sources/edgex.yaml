@@ -1,10 +1,16 @@
 #Global Edgex configurations
 default:
   protocol: redis
-  server: edgex-redis
+  server: ec2-3-134-108-218.us-east-2.compute.amazonaws.com
   port: 6379
-  topic: rules-events
+  topic: edgex/rules-events
+  #topic: rules-events
   type: redis
+  optional:
+    Username: default
+    Password: 0DoNhsYqTKH9RVW+qyCcFzeFaa6gMv1lhDmvkz9Gdg5E
+
+
   # Could be 'event' or 'request'.
   # If the message is from app service, the message type is an event;
   # Otherwise, if it is from the message bus directly, it should be a request
