@@ -16,7 +16,6 @@ package logger
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
@@ -102,16 +101,4 @@ func (f *LogrusAdaptor) Fire(e *logrus.Entry) error {
 	}
 
 	return nil
-}
-
-func AdaptLogrusBasedLogging(l *logrus.Logger) {
-	// Create a new logger instance
-	hook := &LogrusAdaptor{
-		lc: l,
-	}
-	logrus.AddHook(hook)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		DisableColors: true,
-	})
-	logrus.SetOutput(io.Discard)
 }
