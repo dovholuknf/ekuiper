@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -25,6 +26,8 @@ import (
 	"sort"
 	"syscall"
 	"time"
+
+	edgex_vault "github.com/lf-edge/ekuiper/internal/conf/vault"
 
 	"go.uber.org/automaxprocs/maxprocs"
 
@@ -43,6 +46,9 @@ import (
 	"github.com/lf-edge/ekuiper/pkg/ast"
 	"github.com/lf-edge/ekuiper/pkg/cast"
 	"github.com/lf-edge/ekuiper/pkg/schedule"
+
+	zitisdk "github.com/openziti/sdk-golang/edge-apis"
+	"github.com/openziti/sdk-golang/ziti"
 )
 
 var (
@@ -115,6 +121,8 @@ func getStoreConfigByKuiperConfig(c *conf.KuiperConf) (*store.StoreConf, error) 
 	}
 	return sc, nil
 }
+
+var zitiTransports = make(map[string]http.RoundTripper, 10)
 
 func StartUp(Version string) {
 	version = Version
@@ -189,12 +197,72 @@ func StartUp(Version string) {
 
 	// Start rest service
 	srvRest := createRestServer(conf.Config.Basic.RestIp, conf.Config.Basic.RestPort, conf.Config.Basic.Authentication)
+
+	var ln net.Listener
+	var lerr error
+	edgexCredentialFile := os.Getenv("EDGEX_CREDENTIALS")
+	if edgexCredentialFile != "" {
+		edgexCredentialName := os.Getenv("EDGEX_CREDENTIAL_NAME")
+		if edgexCredentialName == "" {
+			edgexCredentialName = "rules-engine"
+		}
+
+		ozController := os.Getenv("OPENZITI_CONTROLLER")
+		openZitiRootUrl := "https://" + ozController
+		caPool, caErr := ziti.GetControllerWellKnownCaPool(openZitiRootUrl)
+		if caErr != nil {
+			panic(caErr)
+		}
+
+		auth := edgex_vault.NewVaultSecret(edgexCredentialName, edgexCredentialFile)
+		auth.Start()
+
+		credentials := zitisdk.NewJwtCredentials(auth.Jwt())
+		credentials.CaPool = caPool
+
+		cfg := &ziti.Config{
+			ZtAPI:       openZitiRootUrl + "/edge/client/v1",
+			Credentials: credentials,
+		}
+		cfg.ConfigTypes = append(cfg.ConfigTypes, "all")
+
+		ctx, ctxErr := ziti.NewContext(cfg)
+		if ctxErr != nil {
+			panic(ctxErr)
+		}
+		if err := ctx.Authenticate(); err != nil {
+			panic(err)
+		}
+
+		zitiContexts := ziti.NewSdkCollection()
+		zitiContexts.Add(ctx)
+
+		zitiTransport := http.DefaultTransport.(*http.Transport).Clone() // copy default transport
+		zitiTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			dialer := zitiContexts.NewDialer()
+			return dialer.Dial(network, addr)
+		}
+		zitiTransports[edgexCredentialFile] = zitiTransport
+
+		serviceName := "edgex.rules-engine"
+		ln, lerr = ctx.Listen(serviceName)
+		if lerr != nil {
+			panic(lerr)
+		}
+	} else {
+		logger.Warn("using ListenMode 'http'")
+		ln, lerr = net.Listen("tcp", srvRest.Addr)
+		if lerr != nil {
+			panic(lerr)
+		}
+	}
+
 	go func() {
 		var err error
 		if conf.Config.Basic.RestTls == nil {
-			err = srvRest.ListenAndServe()
+			err = srvRest.Serve(ln)
 		} else {
-			err = srvRest.ListenAndServeTLS(conf.Config.Basic.RestTls.Certfile, conf.Config.Basic.RestTls.Keyfile)
+			err = srvRest.ServeTLS(ln, conf.Config.Basic.RestTls.Certfile, conf.Config.Basic.RestTls.Keyfile)
 		}
 		if err != nil && err != http.ErrServerClosed {
 			logger.Fatal("Error serving rest service: ", err)
