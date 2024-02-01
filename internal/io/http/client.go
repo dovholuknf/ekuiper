@@ -20,13 +20,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	edgex_vault "github.com/lf-edge/ekuiper/internal/conf/vault"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	edgex_vault "github.com/lf-edge/ekuiper/internal/conf/vault"
 
 	"github.com/lf-edge/ekuiper/internal/conf"
 	mockContext "github.com/lf-edge/ekuiper/internal/io/mock/context"
@@ -220,9 +221,9 @@ func (cc *ClientConf) InitConf(device string, props map[string]interface{}, with
 	var tr *http.Transport
 	edgexCredentialFile := os.Getenv("EDGEX_CREDENTIALS")
 	if edgexCredentialFile != "" {
-		//attempt to locate an existing client for this existing token
+		// attempt to locate an existing client for this existing token
 		if zitiRoundTripper, ok := zitiTransports[edgexCredentialFile]; ok {
-			//reuse the existing context
+			// reuse the existing context
 			if zitiRoundTripper == nil {
 				panic("how is the transport nil")
 			}

@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	edgex_vault "github.com/lf-edge/ekuiper/internal/conf/vault"
 	"net"
 	"net/http"
 	"os"
@@ -27,6 +26,8 @@ import (
 	"sort"
 	"syscall"
 	"time"
+
+	edgex_vault "github.com/lf-edge/ekuiper/internal/conf/vault"
 
 	"go.uber.org/automaxprocs/maxprocs"
 
@@ -197,7 +198,7 @@ func StartUp(Version string) {
 	// Start rest service
 	srvRest := createRestServer(conf.Config.Basic.RestIp, conf.Config.Basic.RestPort, conf.Config.Basic.Authentication)
 
-	//xxx
+	// xxx
 
 	var ln net.Listener
 	var lerr error
@@ -258,7 +259,7 @@ func StartUp(Version string) {
 		}
 	}
 
-	//xx
+	// xx
 
 	go func() {
 		var err error
