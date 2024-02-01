@@ -15,6 +15,7 @@
 package logger
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -54,10 +55,50 @@ func InitLogger() {
 			break
 		}
 	}
+
+	if os.Getenv("OPENZITI_CONTROLLER") != "" {
+		hook := &LogrusAdaptor{
+			lc: Log,
+		}
+		logrus.StandardLogger().SetLevel(logrus.PanicLevel)
+		logrus.AddHook(hook)
+	}
 }
 
 func CloseLogger() {
 	if LogFile != nil {
 		LogFile.Close()
 	}
+}
+
+type LogrusAdaptor struct {
+	lc *logrus.Logger
+}
+
+func (f *LogrusAdaptor) Format(entry *logrus.Entry) ([]byte, error) {
+	// Implement your custom formatting logic here
+	return []byte(fmt.Sprintf("[%s] %s\n", entry.Level, entry.Message)), nil
+}
+
+func (f *LogrusAdaptor) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (f *LogrusAdaptor) Fire(e *logrus.Entry) error {
+	switch e.Level {
+	case logrus.DebugLevel:
+		f.lc.Debug(e.Message)
+	case logrus.InfoLevel:
+		f.lc.Info(e.Message)
+	case logrus.WarnLevel:
+		f.lc.Warn(e.Message)
+	case logrus.ErrorLevel:
+		f.lc.Error(e.Message)
+	case logrus.FatalLevel:
+		f.lc.Error(e.Message)
+	case logrus.PanicLevel:
+		f.lc.Error(e.Message)
+	}
+
+	return nil
 }

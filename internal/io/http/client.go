@@ -15,14 +15,19 @@
 package http
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
+
+	edgex_vault "github.com/lf-edge/ekuiper/internal/conf/vault"
 
 	"github.com/lf-edge/ekuiper/internal/conf"
 	mockContext "github.com/lf-edge/ekuiper/internal/io/mock/context"
@@ -30,6 +35,9 @@ import (
 	"github.com/lf-edge/ekuiper/internal/pkg/httpx"
 	"github.com/lf-edge/ekuiper/pkg/api"
 	"github.com/lf-edge/ekuiper/pkg/cast"
+
+	zitisdk "github.com/openziti/sdk-golang/edge-apis"
+	"github.com/openziti/sdk-golang/ziti"
 )
 
 // ClientConf is the configuration for http client
@@ -95,6 +103,8 @@ type ClientConfOption struct {
 }
 
 type WithClientConfOption func(clientConf *ClientConfOption)
+
+var zitiTransports = make(map[string]*http.Transport, 10)
 
 func WithCheckInterval(checkInterval bool) WithClientConfOption {
 	return func(clientConf *ClientConfOption) {
@@ -208,8 +218,63 @@ func (cc *ClientConf) InitConf(device string, props map[string]interface{}, with
 		}
 	}
 
-	tr := &http.Transport{
-		TLSClientConfig: tlscfg,
+	var tr *http.Transport
+	edgexCredentialFile := os.Getenv("EDGEX_CREDENTIALS")
+	if edgexCredentialFile != "" {
+		// attempt to locate an existing client for this existing token
+		if zitiRoundTripper, ok := zitiTransports[edgexCredentialFile]; ok {
+			// reuse the existing context
+			if zitiRoundTripper == nil {
+				panic("how is the transport nil")
+			}
+			tr = zitiRoundTripper
+		} else {
+			edgexCredentialName := os.Getenv("EDGEX_CREDENTIAL_NAME")
+			if edgexCredentialName == "" {
+				edgexCredentialName = "rules-engine"
+			}
+
+			ozController := os.Getenv("OPENZITI_CONTROLLER")
+			openZitiRootUrl := "https://" + ozController
+			caPool, caErr := ziti.GetControllerWellKnownCaPool(openZitiRootUrl)
+			if caErr != nil {
+				panic(caErr)
+			}
+
+			auth := edgex_vault.NewVaultSecret(edgexCredentialName, edgexCredentialFile)
+			auth.Start()
+
+			credentials := zitisdk.NewJwtCredentials(auth.Jwt())
+			credentials.CaPool = caPool
+
+			cfg := &ziti.Config{
+				ZtAPI:       openZitiRootUrl + "/edge/client/v1",
+				Credentials: credentials,
+			}
+			cfg.ConfigTypes = append(cfg.ConfigTypes, "all")
+
+			ctx, ctxErr := ziti.NewContext(cfg)
+			if ctxErr != nil {
+				panic(ctxErr)
+			}
+			if err := ctx.Authenticate(); err != nil {
+				panic(err)
+			}
+
+			zitiContexts := ziti.NewSdkCollection()
+			zitiContexts.Add(ctx)
+
+			zitiTransport := http.DefaultTransport.(*http.Transport).Clone() // copy default transport
+			zitiTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+				dialer := zitiContexts.NewDialer()
+				return dialer.Dial(network, addr)
+			}
+			zitiTransports[edgexCredentialFile] = zitiTransport
+		}
+	} else {
+		tr = &http.Transport{
+			TLSClientConfig: tlscfg,
+		}
 	}
 
 	cc.client = &http.Client{
