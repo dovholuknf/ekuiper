@@ -57,11 +57,13 @@ func InitLogger() {
 		}
 	}
 
-	hook := &LogrusAdaptor{
-		lc: Log,
+	if os.Getenv("OPENZITI_CONTROLLER") != "" {
+		hook := &LogrusAdaptor{
+			lc: Log,
+		}
+		logrus.StandardLogger().SetLevel(logrus.PanicLevel)
+		logrus.AddHook(hook)
 	}
-	logrus.StandardLogger().SetLevel(logrus.PanicLevel)
-	logrus.AddHook(hook)
 }
 
 func CloseLogger() {
@@ -82,6 +84,7 @@ func (f *LogrusAdaptor) Format(entry *logrus.Entry) ([]byte, error) {
 func (f *LogrusAdaptor) Levels() []logrus.Level {
 	return logrus.AllLevels
 }
+
 func (f *LogrusAdaptor) Fire(e *logrus.Entry) error {
 	switch e.Level {
 	case logrus.DebugLevel:
@@ -102,7 +105,6 @@ func (f *LogrusAdaptor) Fire(e *logrus.Entry) error {
 }
 
 func AdaptLogrusBasedLogging(l *logrus.Logger) {
-
 	// Create a new logger instance
 	hook := &LogrusAdaptor{
 		lc: l,

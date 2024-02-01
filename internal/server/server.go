@@ -198,15 +198,13 @@ func StartUp(Version string) {
 	// Start rest service
 	srvRest := createRestServer(conf.Config.Basic.RestIp, conf.Config.Basic.RestPort, conf.Config.Basic.Authentication)
 
-	// xxx
-
 	var ln net.Listener
 	var lerr error
 	edgexCredentialFile := os.Getenv("EDGEX_CREDENTIALS")
 	if edgexCredentialFile != "" {
 		edgexCredentialName := os.Getenv("EDGEX_CREDENTIAL_NAME")
 		if edgexCredentialName == "" {
-			edgexCredentialName = "ekuiper"
+			edgexCredentialName = "rules-engine"
 		}
 
 		ozController := os.Getenv("OPENZITI_CONTROLLER")
@@ -258,8 +256,6 @@ func StartUp(Version string) {
 			panic(lerr)
 		}
 	}
-
-	// xx
 
 	go func() {
 		var err error

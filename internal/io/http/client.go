@@ -231,7 +231,7 @@ func (cc *ClientConf) InitConf(device string, props map[string]interface{}, with
 		} else {
 			edgexCredentialName := os.Getenv("EDGEX_CREDENTIAL_NAME")
 			if edgexCredentialName == "" {
-				edgexCredentialName = "ekuiper"
+				edgexCredentialName = "rules-engine"
 			}
 
 			ozController := os.Getenv("OPENZITI_CONTROLLER")

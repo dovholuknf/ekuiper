@@ -14,26 +14,6 @@ import (
 	"time"
 )
 
-func main() {
-	time.Sleep(time.Second) //wait for goland to setup its console :/
-
-	auth := NewVaultSecret("ekuiper", "/tmp/edgex/secrets/ekuiper/secrets-token.json")
-	auth.renewalFactor = 300 / float64(900)
-	auth.Start()
-	auth.renewalCallback = func() {
-		slog.Info("------")
-		slog.Info("jwt before: " + auth.Jwt())
-		renewErr := auth.renewToken()
-		slog.Info("jwt after: " + auth.Jwt())
-		slog.Info("------")
-		if renewErr != nil {
-			panic(renewErr)
-		}
-	}
-
-	time.Sleep(100 * time.Minute)
-}
-
 type VaultSecret struct {
 	scheme          string
 	host            string
