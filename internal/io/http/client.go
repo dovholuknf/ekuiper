@@ -266,6 +266,7 @@ func (cc *ClientConf) InitConf(device string, props map[string]interface{}, with
 
 			zitiTransport := http.DefaultTransport.(*http.Transport).Clone() // copy default transport
 			zitiTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+				conf.Log.Infof("ZITI DIALING: %s", addr)
 				dialer := zitiContexts.NewDialer()
 				return dialer.Dial(network, addr)
 			}

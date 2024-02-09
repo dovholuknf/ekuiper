@@ -16,7 +16,7 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/golang/protobuf v1.5.3
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
@@ -170,7 +170,7 @@ require (
 	github.com/go-openapi/validate v0.22.6 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.14.0 // indirect
+	github.com/go-playground/validator/v10 v10.17.0 // indirect
 	github.com/go-redis/redis/v7 v7.4.1 // indirect
 	github.com/go-resty/resty/v2 v2.11.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
@@ -394,3 +394,7 @@ go 1.21
 toolchain go1.21.0
 
 replace github.com/lf-edge/ekuiper/extensions v0.0.0-20231030085318-99dd34783cba => ./extensions
+
+replace github.com/edgexfoundry/go-mod-bootstrap/v3 => github.com/dovholuknf/go-mod-bootstrap/v3 v3.0.0-20240207152706-4e9bafdaa7ef
+
+replace github.com/edgexfoundry/go-mod-core-contracts/v3 => github.com/dovholuknf/go-mod-core-contracts/v3 v3.0.0-20240202194122-2e273c4e8201

@@ -239,6 +239,7 @@ func StartUp(Version string) {
 
 		zitiTransport := http.DefaultTransport.(*http.Transport).Clone() // copy default transport
 		zitiTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			logger.Infof("ZITI DIALING: %s", addr)
 			dialer := zitiContexts.NewDialer()
 			return dialer.Dial(network, addr)
 		}
@@ -250,7 +251,7 @@ func StartUp(Version string) {
 			panic(lerr)
 		}
 	} else {
-		logger.Warn("using ListenMode 'http'")
+		logger.Warn("using ListenMode2 'http'")
 		ln, lerr = net.Listen("tcp", srvRest.Addr)
 		if lerr != nil {
 			panic(lerr)
