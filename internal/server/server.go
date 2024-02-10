@@ -214,7 +214,8 @@ func StartUp(Version string) {
 			panic(caErr)
 		}
 
-		auth := edgex_vault.NewVaultSecret(edgexCredentialName, edgexCredentialFile)
+		secretStoreHost := os.Getenv("SECRETSTORE_HOST")
+		auth := edgex_vault.NewVaultSecret(secretStoreHost, edgexCredentialName, edgexCredentialFile)
 		auth.Start()
 
 		credentials := zitisdk.NewJwtCredentials(auth.Jwt())
@@ -239,7 +240,6 @@ func StartUp(Version string) {
 
 		zitiTransport := http.DefaultTransport.(*http.Transport).Clone() // copy default transport
 		zitiTransport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
-			logger.Infof("ZITI DIALING: %s", addr)
 			dialer := zitiContexts.NewDialer()
 			return dialer.Dial(network, addr)
 		}

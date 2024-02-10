@@ -31,7 +31,7 @@ type VaultSecret struct {
 
 var vaultSecrets = make(map[string]*VaultSecret, 10)
 
-func NewVaultSecret(secretName, initialSecret string) *VaultSecret {
+func NewVaultSecret(vaultAddr, secretName, initialSecret string) *VaultSecret {
 	secretBytes, err := os.ReadFile(initialSecret)
 	if err != nil {
 		panic(fmt.Errorf("could not read initial secret at :%s", initialSecret))
@@ -40,7 +40,7 @@ func NewVaultSecret(secretName, initialSecret string) *VaultSecret {
 	v := &VaultSecret{
 		client:        &http.Client{},
 		scheme:        "http",
-		host:          "localhost",
+		host:          vaultAddr,
 		port:          8200,
 		secretName:    secretName,
 		renewalFactor: 0.75,
