@@ -251,7 +251,7 @@ func StartUp(Version string) {
 			panic(lerr)
 		}
 	} else {
-		logger.Warn("using ListenMode2 'http'")
+		logger.Info("using ListenMode 'http'") //todo fix
 		ln, lerr = net.Listen("tcp", srvRest.Addr)
 		if lerr != nil {
 			panic(lerr)
