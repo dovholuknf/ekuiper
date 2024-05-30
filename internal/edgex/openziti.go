@@ -37,12 +37,13 @@ func AuthenicatedContext(logger *logrus.Logger) ziti.Context {
 	openZitiRootUrl := "https://" + ozController
 	caPool, caErr := ziti.GetControllerWellKnownCaPool(openZitiRootUrl)
 	if caErr != nil {
-		logger.Panic(caErr)
+		logger.Panicf("could not get controller ca pool from %s. %v", openZitiRootUrl, caErr)
 	}
 
 	sp := SecretProvider(logger)
-
-	credentials := zitisdk.NewJwtCredentials(sp.Jwt())
+	jwt := sp.Jwt()
+	println(jwt)
+	credentials := zitisdk.NewJwtCredentials(jwt)
 	credentials.CaPool = caPool
 
 	cfg := &ziti.Config{
